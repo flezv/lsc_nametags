@@ -2,6 +2,15 @@ local showNametags = false
 local ESX = exports["es_extended"]:getSharedObject()
 local renderedNametags = {}
 
+
+local function GenerateMaskedName()
+    if not maskedName then
+        maskedName = "Masked_" .. tostring(math.random(10000000, 99999999))
+    end
+    return maskedName
+end
+
+
 local function Draw3DText(coords, text)
     local onScreen, _x, _y = World3dToScreen2d(coords.x, coords.y, coords.z)
     if not onScreen then return end
@@ -21,6 +30,7 @@ local function Draw3DText(coords, text)
 end
 
 
+
 local function RenderNametags()
     local playerCoords = GetEntityCoords(PlayerPedId())
     renderedNametags = {}
@@ -30,9 +40,21 @@ local function RenderNametags()
         if DoesEntityExist(targetPed) and IsEntityOnScreen(targetPed) then
             local distance = #(playerCoords - GetPedBoneCoords(targetPed, 31086))
             if distance < 15.0 then
-                local text = player == PlayerId() and 
-                    (ESX.PlayerData.firstName or "Unknown") .. " " .. (ESX.PlayerData.lastName or "Player") or 
-                    GetPlayerName(player)
+                local text
+                if player == PlayerId() then
+                    if isMasked then
+                        text = GenerateMaskedName()
+                    else
+                        local firstName = ESX.PlayerData.firstName or "Unknown"
+                        local lastName = ESX.PlayerData.lastName or "Player"
+                        local playerId = GetPlayerServerId(PlayerId())
+                        text = string.format("%s %s (%d)", firstName, lastName, playerId)
+                    end
+                else
+                    local playerName = GetPlayerName(player)
+                    local playerId = GetPlayerServerId(player)
+                    text = string.format("%s (%d)", playerName, playerId)
+                end
                 renderedNametags[#renderedNametags + 1] = {coords = GetPedBoneCoords(targetPed, 31086) + vector3(0.0, 0.0, 0.35), text = text}
             end
         end
@@ -49,6 +71,11 @@ RegisterCommand('tognametags', function()
     showNametags = not showNametags
     if showNametags then RenderNametags() end
     lib.notify({description = showNametags and 'Name tags enabled.' or 'Name tags disabled.', type = showNametags and 'success' or 'error'})
+end, false)
+
+RegisterCommand('togglemask', function()
+    isMasked = not isMasked
+    if not isMasked then maskedName = nil end
 end, false)
 
 RegisterCommand('changefont', function()
