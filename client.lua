@@ -10,6 +10,11 @@ local function GenerateMaskedName()
     return maskedName
 end
 
+local function IsWearingMask(ped)
+    local drawable = GetPedDrawableVariation(ped, 1)
+    return drawable ~= 0
+end
+
 
 local function Draw3DText(coords, text)
     local onScreen, _x, _y = World3dToScreen2d(coords.x, coords.y, coords.z)
@@ -42,9 +47,10 @@ local function RenderNametags()
             if distance < 15.0 then
                 local text
                 if player == PlayerId() then
-                    if isMasked then
+                    if IsWearingMask(targetPed) then
                         text = GenerateMaskedName()
                     else
+                        maskedName = nil
                         local firstName = ESX.PlayerData.firstName or "Unknown"
                         local lastName = ESX.PlayerData.lastName or "Player"
                         local playerId = GetPlayerServerId(PlayerId())
@@ -73,10 +79,6 @@ RegisterCommand('tognametags', function()
     lib.notify({description = showNametags and 'Name tags enabled.' or 'Name tags disabled.', type = showNametags and 'success' or 'error'})
 end, false)
 
-RegisterCommand('togglemask', function()
-    isMasked = not isMasked
-    if not isMasked then maskedName = nil end
-end, false)
 
 RegisterCommand('changefont', function()
     local fontOptions = {
